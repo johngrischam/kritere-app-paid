@@ -1,0 +1,41 @@
+name: Rotate playlist (outer blob + key_b) and prune old files
+
+on:
+  schedule:
+    # Every 2 days at 03:00 UTC
+    - cron: "0 3 */2 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rotate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run rotation script
+        run: node scripts/rotate_playlist.mjs
+        env:
+          PART_A: ${{ secrets.PART_A }}   # <-- set this secret in repo settings (use your actual PART_A)
+          PART_B_LENGTH: "16"             # you can change to 20-24 if you like
+          FILE_PREFIX: "paidappsecure_"   # dated files start with this
+          OUTER_ALIAS: "latest.json"      # fixed alias your page loads
+          KEYB_PATH: "key_b.txt"          # path to key_b
+          FALLBACK_OUTER: "paidappsecure_encoded_base64.json" # used only on very first run if latest.json absent
+
+      - name: Commit & push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "auto: rotate outer blob + key_b; prune >10d"
+          file_pattern: |
+            latest.json
+            key_b.txt
+            paidappsecure_*.json

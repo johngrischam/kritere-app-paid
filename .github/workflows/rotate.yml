@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # ensures full history so commits push cleanly
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -24,22 +26,17 @@ jobs:
       - name: Run rotation script
         run: node scripts/rotate_playlist.mjs
         env:
-          PART_A: ${{ secrets.PART_A }}   # set in repo settings (your actual PART_A)
-          PART_B_LENGTH: "16"             # you can change to 20-24 if you like
-          FILE_PREFIX: "paidappsecure_"   # dated files start with this
-          OUTER_ALIAS: "latest.json"      # fixed alias your page loads
-          KEYB_PATH: "key_b.txt"          # path to key_b
-          FALLBACK_OUTER: "paidappsecure_encoded_base64.json" # used only on first run if latest.json absent
+          PART_A: ${{ secrets.PART_A }}   # secret you already added in repo settings
+          PART_B_LENGTH: "16"             # random key length, can change to 20–24
+          FILE_PREFIX: "paidappsecure_"   # prefix for dated files
+          OUTER_ALIAS: "latest.json"      # alias file used by Blogger
+          KEYB_PATH: "key_b.txt"          # key file fetched by Blogger
+          FALLBACK_OUTER: "paidappsecure_encoded_base64.json" # used on first run only
 
       - name: Commit & push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "auto: rotate outer blob + key_b; prune >10d"
-          commit_user_name: "github-actions[bot]"
-          commit_user_email: "41898282+github-actions[bot]@users.noreply.github.com"
-          branch: main
-          add_options: "-A"        # include new, modified, deleted files
-          file_pattern: |
-            latest.json
-            key_b.txt
-            paidappsecure_*.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "auto: rotate outer blob + key_b; prune >10d" || echo "No changes to commit"
+          git push origin main

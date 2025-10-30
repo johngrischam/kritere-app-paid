@@ -79,9 +79,13 @@ async function main() {
 
   // 2) Decode to innerBase64 using old key
   const oldKey = PART_A + oldPartB;
-  const outerBytes = b64ToBytes(outer);
-  const innerBase64Bytes = xorBytes(outerBytes, oldKey);
-  const innerBase64 = innerBase64Bytes.toString("utf8");
+const outerBytes = b64ToBytes(outer);
+const innerBase64Bytes = xorBytes(outerBytes, oldKey);
+const innerBase64 = Buffer.from(innerBase64Bytes).toString("latin1");
+
+  if (!/^[A-Za-z0-9+/=]+$/.test(innerBase64)) {
+  throw new Error("Decoded innerBase64 is not valid Base64 — key mismatch or wrong encoding");
+}
 
   // (Optional sanity check) innerBase64 should be valid base64; try decode without throwing
   try {
